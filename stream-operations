@@ -1,0 +1,107 @@
+import java.util.*;
+import java.util.stream.*;
+
+class Product {
+    private int id;
+    private String name;
+    private String category;
+    private double price;
+    private int stock;
+
+    public Product(int id, String name, String category, double price, int stock) {
+        this.id = id;
+        this.name = name;
+        this.category = category;
+        this.price = price;
+        this.stock = stock;
+    }
+
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getCategory() { return category; }
+    public double getPrice() { return price; }
+    public int getStock() { return stock; }
+
+    @Override
+    public String toString() {
+        return String.format("Product{id=%d, name='%s', category='%s', price=%.2f, stock=%d}", id, name, category, price, stock);
+    }
+}
+
+public class ProductStreamsDemo {
+    public static void main(String[] args) {
+        List<Product> products = Arrays.asList(
+            new Product(1, "Notebook", "Stationery", 2.50, 120),
+            new Product(2, "Pen", "Stationery", 1.20, 500),
+            new Product(3, "Desk Lamp", "Electronics", 18.99, 45),
+            new Product(4, "USB Cable", "Electronics", 4.99, 0),
+            new Product(5, "Water Bottle", "Home", 9.50, 80),
+            new Product(6, "Coffee Mug", "Home", 7.25, 0),
+            new Product(7, "Headphones", "Electronics", 29.99, 15),
+            new Product(8, "Marker", "Stationery", 1.75, 200),
+            new Product(9, "Notebook Pro", "Stationery", 5.00, 30),
+            new Product(10, "Smart Plug", "Electronics", 12.49, 25)
+        );
+
+        System.out.println("All products:");
+        products.forEach(System.out::println);
+
+        System.out.println("\nProducts in 'Electronics' sorted by price ascending:");
+        products.stream()
+                .filter(p -> "Electronics".equalsIgnoreCase(p.getCategory()))
+                .sorted(Comparator.comparingDouble(Product::getPrice))
+                .forEach(System.out::println);
+
+        System.out.println("\nTop 3 most expensive products:");
+        products.stream()
+                .sorted(Comparator.comparingDouble(Product::getPrice).reversed())
+                .limit(3)
+                .forEach(System.out::println);
+
+        System.out.println("\nAvailable products (stock > 0) sorted by name:");
+        products.stream()
+                .filter(p -> p.getStock() > 0)
+                .sorted(Comparator.comparing(Product::getName, String.CASE_INSENSITIVE_ORDER))
+                .forEach(System.out::println);
+
+        System.out.println("\nNames of products priced below 10.00:");
+        List<String> cheapNames = products.stream()
+                .filter(p -> p.getPrice() < 10.00)
+                .map(Product::getName)
+                .collect(Collectors.toList());
+        System.out.println(cheapNames);
+
+        System.out.println("\nAverage price per category:");
+        Map<String, Double> avgPrice = products.stream()
+                .collect(Collectors.groupingBy(Product::getCategory, Collectors.averagingDouble(Product::getPrice)));
+        avgPrice.forEach((cat, avg) -> System.out.println(cat + " -> " + String.format("%.2f", avg)));
+
+        System.out.println("\nTotal stock per category:");
+        Map<String, Integer> totalStock = products.stream()
+                .collect(Collectors.groupingBy(Product::getCategory, Collectors.summingInt(Product::getStock)));
+        totalStock.forEach((cat, sum) -> System.out.println(cat + " -> " + sum));
+
+        System.out.println("\nMap of product id -> product for items in stock:");
+        Map<Integer, Product> idMap = products.stream()
+                .filter(p -> p.getStock() > 0)
+                .collect(Collectors.toMap(Product::getId, p -> p));
+        idMap.forEach((id, p) -> System.out.println(id + " -> " + p));
+
+        System.out.println("\nDistinct categories:");
+        List<String> categories = products.stream()
+                .map(Product::getCategory)
+                .distinct()
+                .collect(Collectors.toList());
+        System.out.println(categories);
+
+        System.out.println("\nAny out-of-stock products?");
+        boolean anyOutOfStock = products.stream().anyMatch(p -> p.getStock() == 0);
+        System.out.println(anyOutOfStock);
+
+        System.out.println("\nProducts partitioned by availability:");
+        Map<Boolean, List<Product>> partitioned = products.stream()
+                .collect(Collectors.partitioningBy(p -> p.getStock() > 0));
+        System.out.println("Available: " + partitioned.get(true));
+        System.out.println("Out of stock: " + partitioned.get(false));
+    }
+}
